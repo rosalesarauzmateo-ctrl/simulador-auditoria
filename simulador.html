@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Propuesta de Auditoría Operativa - Petrovisa S.R.L.</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            600: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#0f172a',
+                        },
+                        audit: {
+                            navy: '#0B192C',
+                            gold: '#1E3E62',
+                            accent: '#008B8B',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        serif: ['Merriweather', 'Georgia', 'serif'],
+                        heading: ['Playfair Display', 'Georgia', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome v6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom scrollbar for preview and controls */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* A4 Page Simulation Styling */
+        .a4-paper {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 22mm 20mm 20mm 20mm;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 2px 10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            box-sizing: border-box;
+            position: relative;
+            font-size: 10.5pt;
+            line-height: 1.5;
+            color: #1e293b;
+        }
+
+        /* Print Media Styles */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .a4-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: none !important;
+                box-shadow: none !important;
+            }
+            .a4-paper {
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                padding: 15mm 15mm !important;
+                margin: 0 !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-50 no-print border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-2 rounded-lg text-white font-bold">
+                    <i class="fa-solid fa-file-signature text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight leading-none text-white">Simulador de Propuesta de Auditoría Operativa</h1>
+                    <p class="text-xs text-slate-400 mt-1">Caso de Estudio: <span class="text-blue-400 font-semibold">PETROVISA S.R.L.</span> | Modelo COSO & 3 "E"</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center flex-wrap gap-2">
+                <button onclick="loadDemoData()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-md border border-slate-600 transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-rotate-left text-amber-400"></i> Restablecer Petrovisa S.R.L.
+                </button>
+                <button onclick="exportToWord()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md transition flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-file-word text-sm"></i> Exportar a Word (.doc)
+                </button>
+                <button onclick="window.print()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-print text-sm"></i> Imprimir / PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-[1700px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- ==========================================
+             PANEL IZQUIERDO: CONFIGURADOR DE PARÁMETROS
+             ========================================== -->
+        <aside class="lg:col-span-5 bg-white rounded-xl shadow-md border border-slate-200 flex flex-col max-h-[calc(100vh-100px)] lg:sticky lg:top-20 no-print overflow-hidden">
+            <!-- Sidebar Title -->
+            <div class="p-4 bg-slate-800 text-white border-b border-slate-700 flex justify-between items-center">
+                <h2 class="font-semibold text-sm uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-blue-400"></i> Parámetros de la Propuesta
+                </h2>
+                <span class="bg-blue-500/20 text-blue-300 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-blue-400/30">
+                    Edición en Tiempo Real
+                </span>
+            </div>
+
+            <!-- Scrollable Form Container -->
+            <div class="p-5 overflow-y-auto space-y-6 flex-1 text-xs">
+
+                <!-- 1. Firma Consultora -->
+                <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase mb-3 flex items-center gap-1.5 border-b pb-1.5 border-slate-200">
+                        <i class="fa-solid fa-building text-blue-600"></i> 1. Datos de la Firma Auditora
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Nombre de la Firma</label>
+                            <input type="text" id="firmName" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">NIT / Registro Profesional</label>
+                            <input type="text" id="firmNit" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Auditor Líder (Socio Director)</label>
+                            <input type="text" id="firmAuditor" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Cargo del Auditor</label>
+                            <input type="text" id="firmRole" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block font-medium text-slate-600 mb-1">Dirección & Teléfono</label>
+                            <input type="text" id="firmAddress" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Datos del Cliente (Petrovisa S.R.L.) -->
+                <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase mb-3 flex items-center gap-1.5 border-b pb-1.5 border-slate-200">
+                        <i class="fa-solid fa-industry text-blue-600"></i> 2. Datos del Cliente
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Empresa Cliente</label>
+                            <input type="text" id="clientName" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Ciudad y Fecha</label>
+                            <input type="text" id="proposalDate" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Dirigido a (Destinatario)</label>
+                            <input type="text" id="clientAddressee" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Cargo del Destinatario</label>
+                            <input type="text" id="clientRole" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Configuración del Alcance y Áreas Críticas -->
+                <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase mb-2 flex items-center gap-1.5 border-b pb-1.5 border-slate-200">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> 3. Áreas Críticas Diagnosticas
+                    </h3>
+                    <p class="text-[11px] text-slate-500 mb-3">Seleccione las áreas con desviaciones prioritarias para incluir en el examen operativo:</p>
+
+                    <div class="space-y-3">
+                        <!-- Area 1 -->
+                        <div class="p-2.5 bg-white rounded border border-slate-200">
+                            <label class="flex items-center font-semibold text-slate-800 cursor-pointer">
+                                <input type="checkbox" id="checkArea1" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 mr-2" onchange="updateDocument()">
+                                1. Almacenes e Inventarios
+                            </label>
+                            <textarea id="area1Text" rows="2" class="w-full mt-2 p-1.5 text-[11px] border border-slate-200 rounded focus:ring-1 focus:ring-blue-400 focus:outline-none bg-slate-50" oninput="updateDocument()"></textarea>
+                        </div>
+
+                        <!-- Area 2 -->
+                        <div class="p-2.5 bg-white rounded border border-slate-200">
+                            <label class="flex items-center font-semibold text-slate-800 cursor-pointer">
+                                <input type="checkbox" id="checkArea2" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 mr-2" onchange="updateDocument()">
+                                2. Operaciones Técnicas, Certificaciones y Ensayos
+                            </label>
+                            <textarea id="area2Text" rows="2" class="w-full mt-2 p-1.5 text-[11px] border border-slate-200 rounded focus:ring-1 focus:ring-blue-400 focus:outline-none bg-slate-50" oninput="updateDocument()"></textarea>
+                        </div>
+
+                        <!-- Area 3 -->
+                        <div class="p-2.5 bg-white rounded border border-slate-200">
+                            <label class="flex items-center font-semibold text-slate-800 cursor-pointer">
+                                <input type="checkbox" id="checkArea3" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 mr-2" onchange="updateDocument()">
+                                3. Facturación, Ventas y Cuentas por Cobrar
+                            </label>
+                            <textarea id="area3Text" rows="2" class="w-full mt-2 p-1.5 text-[11px] border border-slate-200 rounded focus:ring-1 focus:ring-blue-400 focus:outline-none bg-slate-50" oninput="updateDocument()"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Honorarios, Cronograma y Forma de Pago -->
+                <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase mb-3 flex items-center gap-1.5 border-b pb-1.5 border-slate-200">
+                        <i class="fa-solid fa-coins text-emerald-600"></i> 4. Honorarios, Pagos y Tiempos
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Monto Honorarios</label>
+                            <input type="number" id="feeAmount" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Moneda</label>
+                            <select id="feeCurrency" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" onchange="updateDocument()">
+                                <option value="USD ($)">Dólares US (USD $)</option>
+                                <option value="BOB (Bs.)">Bolivianos (BOB Bs.)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-600 mb-1">Duración Proyecto</label>
+                            <input type="text" id="durationWeeks" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateDocument()">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block font-medium text-slate-600 mb-1">% Anticipo Inicial</label>
+                            <div class="flex items-center gap-2">
+                                <input type="range" id="advancePercent" min="10" max="60" step="5" class="w-full accent-blue-600" oninput="updateDocument()">
+                                <span id="advancePercentLabel" class="font-bold text-blue-700 w-12 text-right">40%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Configuración del Equipo Auditor -->
+                <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase mb-3 flex items-center gap-1.5 border-b pb-1.5 border-slate-200">
+                        <i class="fa-solid fa-users text-blue-600"></i> 5. Equipo Profesional Asignado
+                    </h3>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input type="text" id="role1Name" placeholder="Rol 1" class="p-1.5 border rounded" oninput="updateDocument()">
+                            <input type="text" id="role1Person" placeholder="Especialista 1" class="p-1.5 border rounded" oninput="updateDocument()">
+                            <input type="text" id="role1Hours" placeholder="Horas" class="p-1.5 border rounded" oninput="updateDocument()">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input type="text" id="role2Name" placeholder="Rol 2" class="p-1.5 border rounded" oninput="updateDocument()">
+                            <input type="text" id="role2Person" placeholder="Especialista 2" class="p-1.5 border rounded" oninput="updateDocument()">
+                            <input type="text" id="role2Hours" placeholder="Horas" class="p-1.5 border rounded" oninput="updateDocument()">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input type="text" id="role3Name" placeholder="Rol 3" class="p-1.5 border rounded" oninput="updateDocument()">
+                            <input type="text" id="role3Person" placeholder="Especialista 3" class="p-1.5 border rounded" oninput="updateDocument()">
+                            <input type="text" id="role3Hours" placeholder="Horas" class="p-1.5 border rounded" oninput="updateDocument()">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input type="text" id="role4Name" placeholder="Rol 4" class="p-1.5 border rounded" oninput="updateDocument()">
+                            <input type="text" id="role4Person" placeholder="Especialista 4" class="p-1.5 border rounded" oninput="updateDocument()">
+                            <input type="text" id="role4Hours" placeholder="Horas" class="p-1.5 border rounded" oninput="updateDocument()">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ==========================================
+             PANEL DERECHO: VISTA PREVIA A4 EN VIVO
+             ========================================== -->
+        <section class="lg:col-span-7 flex justify-center items-start a4-container overflow-x-auto pb-12">
+            
+            <!-- Document Page Canvas -->
+            <article id="proposalDocument" class="a4-paper font-serif leading-relaxed text-justify relative">
+                
+                <!-- Encabezado / Membrete Corporativo -->
+                <header class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-start">
+                    <div>
+                        <h1 id="docFirmName" class="font-bold text-xl uppercase tracking-wider text-slate-900 font-heading">
+                            GLOBAL AUDIT & CONSULTING GROUP S.C.
+                        </h1>
+                        <p class="text-[9.5pt] text-slate-600 font-sans mt-0.5">
+                            Firma Auditora & Consultores de Control Interno y Riesgos
+                        </p>
+                        <p id="docFirmNit" class="text-[8.5pt] text-slate-500 font-sans">
+                            NIT: 1029384029 | Reg. Colegio de Auditores N° 458-SC
+                        </p>
+                        <p id="docFirmAddress" class="text-[8.5pt] text-slate-500 font-sans">
+                            Av. Las Monjas N° 450, Edificio Empresarial Equipetrol, Piso 8 | Santa Cruz de la Sierra, Bolivia
+                        </p>
+                    </div>
+                    <div class="text-right font-sans">
+                        <div class="inline-block bg-slate-900 text-white px-3 py-1 text-[9pt] font-bold rounded uppercase tracking-wider">
+                            Propuesta Técnica
+                        </div>
+                        <p class="text-[8.5pt] text-slate-500 mt-2 font-mono" id="docCode">
+                            PROP-AUD-2026/089
+                        </p>
+                    </div>
+                </header>
+
+                <!-- Fecha y Destinatario -->
+                <div class="mb-6 font-sans text-[10pt]">
+                    <p id="docDate" class="font-medium text-slate-700 text-right mb-4">
+                        Santa Cruz de la Sierra, 05 de Octubre de 2026
+                    </p>
+
+                    <div class="bg-slate-50/80 p-3 rounded border-l-4 border-slate-800">
+                        <p class="font-bold text-slate-900">Señores:</p>
+                        <p id="docClientAddressee" class="font-bold text-slate-800 uppercase">DIRECTORIO Y GERENCIA GENERAL</p>
+                        <p id="docClientName" class="font-bold text-blue-900 uppercase">PETROVISA S.R.L.</p>
+                        <p id="docClientRole" class="text-slate-600 italic">Presente.-</p>
+                    </div>
+
+                    <div class="mt-4 pt-2">
+                        <p class="font-bold text-slate-900">
+                            REF.: <span class="border-b-2 border-slate-800 pb-0.5">PROPUESTA DE SERVICIOS PROFESIONALES DE AUDITORÍA OPERATIVA INTEGRAL</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Cuerpo Principal de la Carta -->
+                <div class="space-y-4 text-[10pt]">
+
+                    <!-- Saludo -->
+                    <p>De nuestra mayor consideración:</p>
+                    <p class="indent-6">
+                        Agradecemos la oportunidad brindada a nuestra firma de presentar esta propuesta de servicios profesionales para llevar a cabo la <strong class="text-slate-900">Auditoría Operativa Integral de Procesos</strong> para la empresa <strong id="docBodyClientName">PETROVISA S.R.L.</strong> A continuación, detallamos los términos técnicos, objetivos, alcance, metodología y la propuesta económica correspondientes.
+                    </p>
+
+                    <!-- 1. ANTECEDENTES Y DIAGNÓSTICO PRELIMINAR -->
+                    <section class="mt-4">
+                        <h2 class="font-bold text-[10.5pt] text-slate-900 uppercase border-b border-slate-300 pb-1 mb-2 font-sans flex items-center justify-between">
+                            <span>1. Antecedentes y Justificación del Encargo</span>
+                        </h2>
+                        <p class="indent-6 text-justify">
+                            <strong>PETROVISA S.R.L.</strong> opera en un entorno altamente especializado dentro de la industria de hidrocarburos, abarcando el suministro de insumos petroleros, importación de cables de acero, servicios técnicos de certificación/inspección de maquinaria e izaje, y ensayos de laboratorio. 
+                        </p>
+                        <p class="indent-6 text-justify mt-2">
+                            A partir del análisis situacional preliminar de los estados financieros, flujo de procesos y entrevistas directas, se han identificado cuellos de botella y desviaciones de control interno en áreas clave de la empresa. Por ello, se hace indispensable evaluar la eficiencia, eficacia y economía operacional para blindar la rentabilidad y resguardar los activos de la sociedad.
+                        </p>
+                    </section>
+
+                    <!-- 2. OBJETIVOS DE LA AUDITORÍA OPERATIVA (LAS 3 "E") -->
+                    <section class="mt-4">
+                        <h2 class="font-bold text-[10.5pt] text-slate-900 uppercase border-b border-slate-300 pb-1 mb-2 font-sans">
+                            2. Objetivos de la Auditoría Operativa
+                        </h2>
+                        <p class="mb-2">
+                            El examen se estructurará bajo el marco internacional de Control Interno <strong>COSO 2013</strong> y las Normas de Auditoría Operativa, persiguiendo los siguientes propósitos:
+                        </p>
+                        <ul class="list-disc pl-6 space-y-1">
+                            <li><strong>Objetivo General:</strong> Evaluar de forma exhaustiva el nivel de <strong>Eficacia</strong> (cumplimiento de metas), <strong>Eficiencia</strong> (optimización de recursos) y <strong>Economía</strong> (reducción de costos operativos) en los procesos clave seleccionados de PETROVISA S.R.L.</li>
+                            <li><strong>Objetivos Específicos:</strong> 
+                                <ul class="list-circle pl-5 mt-1 space-y-0.5 text-[9.5pt]">
+                                    <li>Detectar riesgos operativos, fugas financieras y cuellos de botella en la cadena de valor.</li>
+                                    <li>Verificar la efectividad de las actividades de control interno y salvaguarda de inventarios.</li>
+                                    <li>Emitir un Informe con Recomendaciones Prácticas y un Plan de Acción Correctivo de implementación inmediata.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </section>
+
+                    <!-- 3. ALCANCE ESPECÍFICO DEL TRABAJO (ÁREAS CRÍTICAS) -->
+                    <section class="mt-4">
+                        <h2 class="font-bold text-[10.5pt] text-slate-900 uppercase border-b border-slate-300 pb-1 mb-2 font-sans">
+                            3. Alcance Específico (Áreas de Foco Diagnosticadas)
+                        </h2>
+                        <p class="mb-2 text-justify">
+                            Nuestra intervención concentrará el trabajo de campo y las pruebas de cumplimiento de auditoría en los tres frentes operacionales declarados con hallazgos preliminares:
+                        </p>
+
+                        <div id="docScopeContainer" class="space-y-2 font-sans text-[9.5pt]">
+                            <!-- Scope Area 1 -->
+                            <div id="scope1Block" class="p-2.5 bg-slate-50 border border-slate-200 rounded">
+                                <span class="font-bold text-slate-900 block border-b border-slate-200 pb-1">
+                                    <i class="fa-solid fa-boxes-stacked text-blue-700 mr-1"></i> A. Almacenes, Inventarios y Custodia de Stock
+                                </span>
+                                <p id="docScope1Text" class="mt-1 font-serif text-[9pt] text-slate-800 text-justify">
+                                    Examen físico e informático de la toma de inventarios (materiales de izaje, cables de acero, repuestos); conciliación de kárdex vs ERP; control de mermas, custodia física, obsolescencia y valorización de mercadería en tránsito e importaciones.
+                                </p>
+                            </div>
+
+                            <!-- Scope Area 2 -->
+                            <div id="scope2Block" class="p-2.5 bg-slate-50 border border-slate-200 rounded">
+                                <span class="font-bold text-slate-900 block border-b border-slate-200 pb-1">
+                                    <i class="fa-solid fa-microscope text-blue-700 mr-1"></i> B. Operaciones Técnicas, Certificaciones y Ensayos de Laboratorio
+                                </span>
+                                <p id="docScope2Text" class="mt-1 font-serif text-[9pt] text-slate-800 text-justify">
+                                    Evaluación de los tiempos de entrega en servicios de campo y emisión de certificados para operadores y equipos de izaje; control de calibración/mantenimiento de equipos de ensayos no destructivos y programación técnica.
+                                </p>
+                            </div>
+
+                            <!-- Scope Area 3 -->
+                            <div id="scope3Block" class="p-2.5 bg-slate-50 border border-slate-200 rounded">
+                                <span class="font-bold text-slate-900 block border-b border-slate-200 pb-1">
+                                    <i class="fa-solid fa-file-invoice-dollar text-blue-700 mr-1"></i> C. Ciclo Comercial: Facturación, Ventas y Cuentas por Cobrar
+                                </span>
+                                <p id="docScope3Text" class="mt-1 font-serif text-[9pt] text-slate-800 text-justify">
+                                    Auditoría del flujo desde la solicitud del cliente hasta la entrega del servicio/producto y posterior facturación; revisión de la antigüedad de la cartera morosa con clientes petroleros, políticas de crédito y conciliaciones de saldos.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 4. METODOLOGÍA Y FASES DEL PROYECTO -->
+                    <section class="mt-4">
+                        <h2 class="font-bold text-[10.5pt] text-slate-900 uppercase border-b border-slate-300 pb-1 mb-2 font-sans">
+                            4. Metodología de Trabajo y Fases de Ejecución
+                        </h2>
+                        <p class="mb-2">El trabajo se ejecutará en cuatro (4) fases secuenciales:</p>
+                        <div class="grid grid-cols-2 gap-2 text-[9pt] font-sans">
+                            <div class="p-2 bg-slate-50 border rounded">
+                                <strong>Fase I: Planificación y Relevamiento:</strong> Comprensión del negocio, revisión de manuales de funciones y mapa de riesgos COSO.
+                            </div>
+                            <div class="p-2 bg-slate-50 border rounded">
+                                <strong>Fase II: Pruebas de Campo y Cumplimiento:</strong> Muestreos estadísticos, inspecciones físicas en almacén y pruebas de recorrido.
+                            </div>
+                            <div class="p-2 bg-slate-50 border rounded">
+                                <strong>Fase III: Diagnóstico y Cuadro de Hallazgos:</strong> Determinación de Causa, Efecto, Condición y Criterio de cada desviación.
+                            </div>
+                            <div class="p-2 bg-slate-50 border rounded">
+                                <strong>Fase IV: Informe Final & Plan de Acción:</strong> Emisión del Informe con matriz de recomendaciones de corto y mediano plazo.
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 5. EQUIPO PROFESIONAL Y CRONOGRAMA -->
+                    <section class="mt-4">
+                        <h2 class="font-bold text-[10.5pt] text-slate-900 uppercase border-b border-slate-300 pb-1 mb-2 font-sans">
+                            5. Equipo de Trabajo Asignado y Tiempos
+                        </h2>
+                        <p class="mb-2">
+                            Se ha estructurado un equipo multidisciplinario especializado con una dedicación estimada de <strong id="docDurationText">4 Semanas</strong>:
+                        </p>
+
+                        <table class="w-full border-collapse border border-slate-300 text-[9pt] font-sans my-2">
+                            <thead>
+                                <tr class="bg-slate-800 text-white text-left">
+                                    <th class="border border-slate-400 p-1.5 font-semibold">Rol en el Proyecto</th>
+                                    <th class="border border-slate-400 p-1.5 font-semibold">Especialista Asignado</th>
+                                    <th class="border border-slate-400 p-1.5 font-semibold text-center">Horas Estimadas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="docTeamTableBody">
+                                <!-- Dynamic Team Rows inserted by JavaScript -->
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-slate-100 font-bold">
+                                    <td colspan="2" class="border border-slate-300 p-1.5 text-right">TOTAL HORAS PROFESIONALES:</td>
+                                    <td id="docTotalHours" class="border border-slate-300 p-1.5 text-center text-blue-900">220 hrs</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </section>
+
+                    <!-- 6. PROPUESTA ECONÓMICA Y PLAN DE PAGOS -->
+                    <section class="mt-4">
+                        <h2 class="font-bold text-[10.5pt] text-slate-900 uppercase border-b border-slate-300 pb-1 mb-2 font-sans">
+                            6. Propuesta Económica y Condiciones de Pago
+                        </h2>
+                        <p class="mb-2">
+                            Los honorarios profesionales han sido fijados considerando el nivel de especialización técnica requerido y la dedicación horaria prevista:
+                        </p>
+
+                        <div class="bg-slate-50 p-3 rounded border border-slate-300 font-sans my-2">
+                            <div class="flex justify-between items-center text-[11pt] font-bold border-b pb-2 mb-2">
+                                <span class="text-slate-800">HONORARIO TOTAL PROPUESTO:</span>
+                                <span id="docFeeTotal" class="text-blue-900 text-base">USD $ 6,500.00</span>
+                            </div>
+                            
+                            <p class="text-[8.5pt] text-slate-600 mb-2 italic">
+                                * Incluye impuestos de ley, papelería, instrumentos de laboratorio y viáticos de traslado a instalaciones de PETROVISA S.R.L.
+                            </p>
+
+                            <p class="font-semibold text-[9.5pt] text-slate-800 mb-1">Estructura de Pagos:</p>
+                            <table class="w-full border-collapse text-[8.5pt]">
+                                <tr class="border-b">
+                                    <td id="docAdvanceLabel" class="py-1">40% A la firma del contrato de servicios (Anticipo):</td>
+                                    <td id="docAdvanceVal" class="py-1 font-bold text-right">USD $ 2,600.00</td>
+                                </tr>
+                                <tr class="border-b">
+                                    <td id="docMilestoneLabel" class="py-1">30% A la entrega del Informe Borrador / Avance de Campo:</td>
+                                    <td id="docMilestoneVal" class="py-1 font-bold text-right">USD $ 1,950.00</td>
+                                </tr>
+                                <tr>
+                                    <td id="docFinalLabel" class="py-1">30% A la entrega del Informe Final y Plan de Acción:</td>
+                                    <td id="docFinalVal" class="py-1 font-bold text-right">USD $ 1,950.00</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- 7. RESPONSABILIDADES Y VALIDEZ -->
+                    <section class="mt-4">
+                        <h2 class="font-bold text-[10.5pt] text-slate-900 uppercase border-b border-slate-300 pb-1 mb-2 font-sans">
+                            7. Responsabilidades y Validez
+                        </h2>
+                        <p class="indent-6 text-justify text-[9.5pt]">
+                            <strong>Petrovisa S.R.L.</strong> garantizará el libre acceso a la documentación contable, registros del sistema ERP, archivos de inventarios y personal operativo clave. Esta propuesta mantiene una validez comercial de <strong>30 días calendario</strong> a partir de la fecha de su emisión.
+                        </p>
+                    </section>
+
+                    <p class="mt-4 text-justify">
+                        Seguros de que esta propuesta responde a las exigencias operativas y de control de su prestigiosa empresa, quedamos a su entera disposición para cualquier aclaración técnica.
+                    </p>
+
+                    <p class="mt-2 font-medium">Atentamente,</p>
+
+                    <!-- BLOQUE DE FIRMAS Y CONFORMIDAD -->
+                    <div class="mt-14 pt-4 grid grid-cols-2 gap-8 font-sans text-[9pt] border-t border-slate-200">
+                        
+                        <!-- Emisor: Firma Auditora -->
+                        <div class="text-center flex flex-col justify-end">
+                            <div class="w-48 mx-auto border-b-2 border-slate-800 mb-2 h-12 flex items-end justify-center">
+                                <span class="text-slate-300 font-serif italic text-[8pt]">Firma / Sello Auditor Líder</span>
+                            </div>
+                            <p id="docSigAuditor" class="font-bold text-slate-900 uppercase">LIC. AUD. ROBERTO VARGAS CASTEDO</p>
+                            <p id="docSigAuditorRole" class="text-slate-600 font-medium">Socio Director de Auditoría Operativa</p>
+                            <p id="docSigFirm" class="text-[8pt] text-slate-500">GLOBAL AUDIT & CONSULTING GROUP S.C.</p>
+                        </div>
+
+                        <!-- Receptor: Petrovisa S.R.L. -->
+                        <div class="text-center flex flex-col justify-end">
+                            <div class="w-48 mx-auto border-b-2 border-slate-800 mb-2 h-12 flex items-end justify-center">
+                                <span class="text-slate-300 font-serif italic text-[8pt]">Firma y Sello de Aceptación</span>
+                            </div>
+                            <p id="docSigClient" class="font-bold text-slate-900 uppercase">DIRECTORIO / GERENCIA GENERAL</p>
+                            <p id="docSigClientCompany" class="text-slate-600 font-medium">PETROVISA S.R.L.</p>
+                            <p class="text-[8pt] text-slate-500">Aceptación y Conformidad de la Propuesta</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </article>
+        </section>
+
+    </main>
+
+    <script>
+        // Default Dataset configuration for Petrovisa S.R.L.
+        const defaultData = {
+            firmName: "GLOBAL AUDIT & CONSULTING GROUP S.C.",
+            firmNit: "1029384029 | Reg. CAUB N° 458",
+            firmAuditor: "Lic. Aud. Roberto Vargas Castedo",
+            firmRole: "Socio Director de Auditoría Operativa",
+            firmAddress: "Av. Las Monjas N° 450, Edif. Equipetrol, Piso 8 | Santa Cruz, Bolivia",
+            
+            clientName: "Petrovisa S.R.L.",
+            clientAddressee: "Directorio y Gerencia General",
+            clientRole: "Representantes Legales",
+            proposalDate: "Santa Cruz de la Sierra, 05 de Octubre de 2026",
+            
+            checkArea1: true,
+            area1Text: "Auditoría física y lógica de stock de insumos petroleros, cables/eslingas de acero, repuestos, rotación, kárdex vs ERP, mermas y custodia física.",
+            
+            checkArea2: true,
+            area2Text: "Examen de tiempos de respuesta, calibración y mantenimiento de laboratorio no destructivo, programación de campo e inspección de equipos de izaje.",
+            
+            checkArea3: true,
+            area3Text: "Evaluación del flujo de entrega de suministros/servicios a facturación, mora de cuentas por cobrar en el sector petrolero y límites de crédito.",
+            
+            feeAmount: 6500,
+            feeCurrency: "USD ($)",
+            durationWeeks: "4 Semanas (1 Mes)",
+            advancePercent: 40,
+            
+            team: [
+                { role: "Socio Director de Auditoría", person: "Lic. Roberto Vargas C.", hours: "30 hrs" },
+                { role: "Gerente de Auditoría Operativa", person: "MSc. Claudia Mendoza R.", hours: "60 hrs" },
+                { role: "Auditor Senior (Inventarios)", person: "Lic. Javier Soliz P.", hours: "80 hrs" },
+                { role: "Especialista Técnico en Ensayos", person: "Ing. Mauricio Justiniano", hours: "50 hrs" }
+            ]
+        };
+
+        // Initialize application state with default data
+        function loadDemoData() {
+            document.getElementById('firmName').value = defaultData.firmName;
+            document.getElementById('firmNit').value = defaultData.firmNit;
+            document.getElementById('firmAuditor').value = defaultData.firmAuditor;
+            document.getElementById('firmRole').value = defaultData.firmRole;
+            document.getElementById('firmAddress').value = defaultData.firmAddress;
+
+            document.getElementById('clientName').value = defaultData.clientName;
+            document.getElementById('clientAddressee').value = defaultData.clientAddressee;
+            document.getElementById('clientRole').value = defaultData.clientRole;
+            document.getElementById('proposalDate').value = defaultData.proposalDate;
+
+            document.getElementById('checkArea1').checked = defaultData.checkArea1;
+            document.getElementById('area1Text').value = defaultData.area1Text;
+
+            document.getElementById('checkArea2').checked = defaultData.checkArea2;
+            document.getElementById('area2Text').value = defaultData.area2Text;
+
+            document.getElementById('checkArea3').checked = defaultData.checkArea3;
+            document.getElementById('area3Text').value = defaultData.area3Text;
+
+            document.getElementById('feeAmount').value = defaultData.feeAmount;
+            document.getElementById('feeCurrency').value = defaultData.feeCurrency;
+            document.getElementById('durationWeeks').value = defaultData.durationWeeks;
+            document.getElementById('advancePercent').value = defaultData.advancePercent;
+
+            // Load Team inputs
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`role${i+1}Name`).value = defaultData.team[i].role;
+                document.getElementById(`role${i+1}Person`).value = defaultData.team[i].person;
+                document.getElementById(`role${i+1}Hours`).value = defaultData.team[i].hours;
+            }
+
+            updateDocument();
+        }
+
+        function updateDocument() {
+            // Firm details
+            const firmName = document.getElementById('firmName').value || "FIRMA CONSULTORA AUDITORA";
+            document.getElementById('docFirmName').innerText = firmName;
+            document.getElementById('docFirmNit').innerText = "NIT / Registro: " + (document.getElementById('firmNit').value || "Sin registro");
+            document.getElementById('docFirmAddress').innerText = document.getElementById('firmAddress').value;
+            
+            const auditorName = document.getElementById('firmAuditor').value;
+            const auditorRole = document.getElementById('firmRole').value;
+            document.getElementById('docSigAuditor').innerText = auditorName;
+            document.getElementById('docSigAuditorRole').innerText = auditorRole;
+            document.getElementById('docSigFirm').innerText = firmName;
+
+            // Client details
+            const clientName = document.getElementById('clientName').value || "PETROVISA S.R.L.";
+            document.getElementById('docClientName').innerText = clientName;
+            document.getElementById('docBodyClientName').innerText = clientName;
+            document.getElementById('docClientAddressee').innerText = document.getElementById('clientAddressee').value;
+            document.getElementById('docClientRole').innerText = document.getElementById('clientRole').value;
+            document.getElementById('docDate').innerText = document.getElementById('proposalDate').value;
+            
+            document.getElementById('docSigClient').innerText = document.getElementById('clientAddressee').value;
+            document.getElementById('docSigClientCompany').innerText = clientName;
+
+            // Areas Scope Visibility
+            const check1 = document.getElementById('checkArea1').checked;
+            const check2 = document.getElementById('checkArea2').checked;
+            const check3 = document.getElementById('checkArea3').checked;
+
+            document.getElementById('scope1Block').style.display = check1 ? 'block' : 'none';
+            document.getElementById('scope2Block').style.display = check2 ? 'block' : 'none';
+            document.getElementById('scope3Block').style.display = check3 ? 'block' : 'none';
+
+            document.getElementById('docScope1Text').innerText = document.getElementById('area1Text').value;
+            document.getElementById('docScope2Text').innerText = document.getElementById('area2Text').value;
+            document.getElementById('docScope3Text').innerText = document.getElementById('area3Text').value;
+
+            // Fees Calculation
+            const feeVal = parseFloat(document.getElementById('feeAmount').value) || 0;
+            const currency = document.getElementById('feeCurrency').value;
+            const advancePct = parseInt(document.getElementById('advancePercent').value) || 40;
+            const remainingPct = (100 - advancePct) / 2;
+
+            document.getElementById('advancePercentLabel').innerText = advancePct + "%";
+            document.getElementById('docDurationText').innerText = document.getElementById('durationWeeks').value;
+
+            const formatMoney = (val) => {
+                const symbol = currency.includes("USD") ? "USD $" : "Bs.";
+                return `${symbol} ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            };
+
+            document.getElementById('docFeeTotal').innerText = formatMoney(feeVal);
+
+            const advanceAmt = (feeVal * advancePct) / 100;
+            const milestoneAmt = (feeVal * remainingPct) / 100;
+
+            document.getElementById('docAdvanceLabel').innerText = `${advancePct}% A la firma del contrato de servicios (Anticipo):`;
+            document.getElementById('docAdvanceVal').innerText = formatMoney(advanceAmt);
+
+            document.getElementById('docMilestoneLabel').innerText = `${remainingPct.toFixed(0)}% A la entrega del Informe Borrador / Avance de Campo:`;
+            document.getElementById('docMilestoneVal').innerText = formatMoney(milestoneAmt);
+
+            document.getElementById('docFinalLabel').innerText = `${remainingPct.toFixed(0)}% A la entrega del Informe Final y Plan de Acción:`;
+            document.getElementById('docFinalVal').innerText = formatMoney(milestoneAmt);
+
+            // Team Table Generation
+            const tbody = document.getElementById('docTeamTableBody');
+            tbody.innerHTML = '';
+            let totalHoursNum = 0;
+
+            for (let i = 1; i <= 4; i++) {
+                const role = document.getElementById(`role${i}Name`).value;
+                const person = document.getElementById(`role${i}Person`).value;
+                const hrs = document.getElementById(`role${i}Hours`).value;
+
+                if (role || person) {
+                    const row = document.createElement('tr');
+                    row.className = i % 2 === 0 ? 'bg-slate-50' : 'bg-white';
+                    row.innerHTML = `
+                        <td class="border border-slate-300 p-1.5 font-semibold text-slate-800">${role}</td>
+                        <td class="border border-slate-300 p-1.5 text-slate-700">${person}</td>
+                        <td class="border border-slate-300 p-1.5 text-center font-mono">${hrs}</td>
+                    `;
+                    tbody.appendChild(row);
+
+                    // Try parsing numbers for grand total
+                    const num = parseInt(hrs.replace(/[^0-9]/g, '')) || 0;
+                    totalHoursNum += num;
+                }
+            }
+
+            document.getElementById('docTotalHours').innerText = `${totalHoursNum} hrs`;
+        }
+
+        function exportToWord() {
+            const documentElement = document.getElementById('proposalDocument');
+            const documentHtml = documentElement.innerHTML;
+
+            // Build full Word XML/HTML wrapper with Word page setup styles
+            const wordTemplate = `
+                <html xmlns:o='urn:schemas-microsoft-microsoft-com:office:office' 
+                      xmlns:w='urn:schemas-microsoft-microsoft-com:office:word' 
+                      xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>Propuesta de Auditoria Operativa Petrovisa SRL</title>
+                    <!--[if gte mso 9]>
+                    <xml>
+                        <w:WordDocument>
+                            <w:View>Print</w:View>
+                            <w:Zoom>100</w:Zoom>
+                            <w:DoNotOptimizeForCustomX整/>
+                        </w:WordDocument>
+                    </xml>
+                    <![endif]-->
+                    <style>
+                        @page WordSection1 {
+                            size: 210mm 297mm;
+                            margin: 20mm 20mm 20mm 20mm;
+                            mso-header-margin: 35.4pt;
+                            mso-footer-margin: 35.4pt;
+                            mso-paper-source: 0;
+                        }
+                        div.WordSection1 {
+                            page: WordSection1;
+                        }
+                        body {
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                            font-size: 11pt;
+                            line-height: 1.4;
+                            color: #1e293b;
+                            text-align: justify;
+                        }
+                        h1 { font-family: 'Arial', sans-serif; font-size: 16pt; color: #0f172a; text-transform: uppercase; margin-bottom: 2px; }
+                        h2 { font-family: 'Arial', sans-serif; font-size: 11pt; color: #0f172a; text-transform: uppercase; border-bottom: 1px solid #94a3b8; margin-top: 15px; margin-bottom: 8px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 8px; font-family: 'Arial', sans-serif; font-size: 9.5pt; }
+                        th { background-color: #1e293b; color: #ffffff; border: 1px solid #475569; padding: 6px; text-align: left; }
+                        td { border: 1px solid #cbd5e1; padding: 6px; }
+                        .no-print, .fa-solid, i { display: none; }
+                    </style>
+                </head>
+                <body>
+                    <div class="WordSection1">
+                        ${documentHtml}
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // Convert string to Blob and trigger file download
+            const blob = new Blob(['\ufeff', wordTemplate], {
+                type: 'application/msword;charset=utf-8'
+            });
+
+            const fileName = `Propuesta_Auditoria_Operativa_Petrovisa_SRL.doc`;
+            
+            if (navigator.msSaveOrOpenBlob) {
+                navigator.msSaveOrOpenBlob(blob, fileName);
+            } else {
+                const downloadLink = document.createElement('a');
+                document.body.appendChild(downloadLink);
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = fileName;
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }
+        }
+
+        // Run default data initialization when page loads
+        window.onload = function() {
+            loadDemoData();
+        };
+    </script>
+</body>
+</html>
